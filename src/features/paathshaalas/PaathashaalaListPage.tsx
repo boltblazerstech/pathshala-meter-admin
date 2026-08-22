@@ -1,0 +1,206 @@
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { listPaathshaalas, deletePaathashaala } from '../../api/paathshaalas'
+import { Table, type Column } from '../../components/Table'
+import { PaathashaalaModal } from './PaathashaalaModal'
+import { toast } from '../../lib/toast'
+import type { Paathashaala } from '../../types'
+
+export function PaathashaalaListPage() {
+  const queryClient = useQueryClient()
+  
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  // Simple debounce logic for search
+  import('react').then(({ useEffect }) => {
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedSearch(search)
+        setPage(1) // reset to first page on search
+      }, 300)
+      return () => clearTimeout(handler)
+    }, [search])
+  })
+
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingPaathashaala, setEditingPaathashaala] = useState<Paathashaala | null>(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['paathshaalas', page, debouncedSearch],
+    queryFn: () => listPaathshaalas({ limit: 10, page, search: debouncedSearch }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: deletePaathashaala,
+    onSuccess: () => {
+      toast.success('Paathashaala deleted')
+      queryClient.invalidateQueries({ queryKey: ['paathshaalas'] })
+    },
+    onError: (error: any) => {
+      // Show the specific "still assigned" error if present
+      const message = error.response?.data?.message || 'Failed to delete'
+      toast.error(message)
+    }
+  })
+
+  function handleEdit(p: Paathashaala) {
+    setEditingPaathashaala(p)
+    setModalOpen(true)
+  }
+
+  function handleCreate() {
+    setEditingPaathashaala(null)
+    setModalOpen(true)
+  }
+
+  function handleDelete(id: string) {
+    if (confirm('Are you sure you want to delete this Paathashaala?')) {
+      deleteMutation.mutate(id)
+    }
+  }
+
+  const COLUMNS: Column<Paathashaala>[] = [
+    { key: 'name', header: 'Name' },
+    {
+      key: 'coords',
+      header: 'Coordinates',
+      render: (row) => (
+        <span className="font-mono text-xs text-gray-600">
+          {row.lat.toFixed(4)}, {row.lng.toFixed(4)}
+        </span>
+      ),
+    },
+    {
+      key: 'coordinate_confidence',
+      header: 'Confidence',
+      render: (row) => {
+        if (row.coordinate_confidence === 'parsed') {
+          return (
+            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+              Parsed
+            </span>
+          )
+        }
+        return (
+          <span 
+            className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 cursor-help"
+            title="Coordinates derived from a fallback search. May be inaccurate."
+          >
+            Fallback
+          </span>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (row) => (
+        <div className="flex space-x-3 text-sm font-medium">
+          <button
+            onClick={() => handleEdit(row)}
+            className="text-indigo-600 hover:text-indigo-900"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDelete(row.id)}
+            disabled={deleteMutation.isPending}
+            className="text-red-600 hover:text-red-900 disabled:opacity-50"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
+  ]
+
+  const totalPages = data ? Math.ceil(data.total / data.limit) : 1
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-lg font-semibold text-gray-700">Paathshaalas</h2>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <input
+            type="search"
+            placeholder="Search paathshaalas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full sm:w-64"
+          />
+          <button
+            onClick={handleCreate}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 w-full sm:w-auto"
+          >
+            Add Paathashaala
+          </button>
+        </div>
+      </div>
+
+      <Table<Paathashaala>
+        columns={COLUMNS}
+        data={data?.data ?? []}
+        keyField="id"
+        isLoading={isLoading}
+        emptyMessage="No paathshaalas found."
+      />
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow-sm mt-4">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Previous</span>
+                  ←
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Next</span>
+                  →
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <PaathashaalaModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        paathashaala={editingPaathashaala}
+      />
+    </div>
+  )
+}
