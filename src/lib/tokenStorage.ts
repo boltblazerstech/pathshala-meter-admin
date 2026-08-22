@@ -3,10 +3,10 @@
 // Swap to sessionStorage or httpOnly cookies by changing this file only.
 // ---------------------------------------------------------------------------
 
-const ACCESS_KEY = 'pm_access_token'
+const ACCESS_KEY = 'admin_token'
 
 export function getToken(): string | null {
-  return localStorage.getItem(ACCESS_KEY)
+  return localStorage.getItem(ACCESS_KEY) || localStorage.getItem('pm_access_token')
 }
 
 export function setToken(accessToken: string): void {
@@ -15,4 +15,5 @@ export function setToken(accessToken: string): void {
 
 export function clearToken(): void {
   localStorage.removeItem(ACCESS_KEY)
+  localStorage.removeItem('pm_access_token')
 }

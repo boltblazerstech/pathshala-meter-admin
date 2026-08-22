@@ -31,7 +31,7 @@ export function TeacherListPage() {
     queryFn: () => listTeachers({ limit: 10, page, search: debouncedSearch }),
   })
 
-  // Soft-delete: API DELETE marks is_active = false
+  // Soft-delete: API DELETE marks active = false
   const deactivateMutation = useMutation({
     mutationFn: deleteTeacher,
     onSuccess: () => {
@@ -40,9 +40,9 @@ export function TeacherListPage() {
     }
   })
 
-  // Activate: PATCH is_active = true
+  // Activate: PUT / PATCH active = true
   const activateMutation = useMutation({
-    mutationFn: (id: string) => updateTeacher(id, { is_active: true }),
+    mutationFn: (id: string) => updateTeacher(id, { active: true, is_active: true }),
     onSuccess: () => {
       toast.success('Teacher activated')
       queryClient.invalidateQueries({ queryKey: ['teachers'] })
@@ -60,7 +60,8 @@ export function TeacherListPage() {
   }
 
   function handleToggleStatus(t: Teacher) {
-    if (t.is_active) {
+    const isActive = t.active ?? t.is_active ?? true
+    if (isActive) {
       if (confirm('Are you sure you want to deactivate this Teacher? They will not be able to log into the field app.')) {
         deactivateMutation.mutate(t.id)
       }
@@ -70,38 +71,55 @@ export function TeacherListPage() {
   }
 
   const COLUMNS: Column<Teacher>[] = [
-    { key: 'name',              header: 'Name' },
-    { key: 'phone',             header: 'Phone' },
-    { key: 'paathashaala_name', header: 'Paathashaala' },
+    { key: 'name', header: 'Name' },
+    {
+      key: 'phone',
+      header: 'Phone',
+      render: (row) => row.phone_number || row.phone || '—',
+    },
+    {
+      key: 'paathashaala_name',
+      header: 'Paathashaala',
+      render: (row) => row.paathshaala_name || row.paathashaala_name || '—',
+    },
     {
       key: 'is_active',
       header: 'Status',
-      render: (row) => <StatusPill status={row.is_active ? 'active' : 'inactive'} />,
+      render: (row) => {
+        const isActive = row.active ?? row.is_active ?? true
+        return <StatusPill status={isActive ? 'active' : 'inactive'} />
+      },
     },
     {
       key: 'actions',
       header: 'Actions',
-      render: (row) => (
-        <div className="flex space-x-3 text-sm font-medium">
-          <button
-            onClick={() => handleEdit(row)}
-            className="text-indigo-600 hover:text-indigo-900"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleToggleStatus(row)}
-            disabled={deactivateMutation.isPending || activateMutation.isPending}
-            className={`${row.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'} disabled:opacity-50`}
-          >
-            {row.is_active ? 'Deactivate' : 'Activate'}
-          </button>
-        </div>
-      ),
+      render: (row) => {
+        const isActive = row.active ?? row.is_active ?? true
+        return (
+          <div className="flex space-x-3 text-sm font-medium">
+            <button
+              onClick={() => handleEdit(row)}
+              className="text-indigo-600 hover:text-indigo-900"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleToggleStatus(row)}
+              disabled={deactivateMutation.isPending || activateMutation.isPending}
+              className={`${isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'} disabled:opacity-50`}
+            >
+              {isActive ? 'Deactivate' : 'Activate'}
+            </button>
+          </div>
+        )
+      },
     },
   ]
 
-  const totalPages = data ? Math.ceil(data.total / data.limit) : 1
+  const items = data?.content ?? data?.data ?? []
+  const totalElements = data?.totalElements ?? data?.total ?? items.length
+  const pageSize = data?.size ?? data?.limit ?? 10
+  const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalElements / pageSize))
 
   return (
     <div className="space-y-4">
@@ -126,7 +144,7 @@ export function TeacherListPage() {
 
       <Table<Teacher>
         columns={COLUMNS}
-        data={data?.data ?? []}
+        data={items}
         keyField="id"
         isLoading={isLoading}
         emptyMessage="No teachers found."
@@ -154,7 +172,7 @@ export function TeacherListPage() {
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
+                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span> ({totalElements} total)
               </p>
             </div>
             <div>

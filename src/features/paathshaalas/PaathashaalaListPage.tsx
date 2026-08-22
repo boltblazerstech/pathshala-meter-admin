@@ -37,7 +37,6 @@ export function PaathashaalaListPage() {
       queryClient.invalidateQueries({ queryKey: ['paathshaalas'] })
     },
     onError: (error: any) => {
-      // Show the specific "still assigned" error if present
       const message = error.response?.data?.message || 'Failed to delete'
       toast.error(message)
     }
@@ -66,7 +65,7 @@ export function PaathashaalaListPage() {
       header: 'Coordinates',
       render: (row) => (
         <span className="font-mono text-xs text-gray-600">
-          {row.lat.toFixed(4)}, {row.lng.toFixed(4)}
+          {typeof row.lat === 'number' ? row.lat.toFixed(4) : '—'}, {typeof row.lng === 'number' ? row.lng.toFixed(4) : '—'}
         </span>
       ),
     },
@@ -74,7 +73,8 @@ export function PaathashaalaListPage() {
       key: 'coordinate_confidence',
       header: 'Confidence',
       render: (row) => {
-        if (row.coordinate_confidence === 'parsed') {
+        const conf = (row.coordinate_confidence || '').toLowerCase()
+        if (conf === 'parsed' || conf === 'high') {
           return (
             <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
               Parsed
@@ -114,7 +114,10 @@ export function PaathashaalaListPage() {
     },
   ]
 
-  const totalPages = data ? Math.ceil(data.total / data.limit) : 1
+  const items = data?.content ?? data?.data ?? []
+  const totalElements = data?.totalElements ?? data?.total ?? items.length
+  const pageSize = data?.size ?? data?.limit ?? 10
+  const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalElements / pageSize))
 
   return (
     <div className="space-y-4">
@@ -139,7 +142,7 @@ export function PaathashaalaListPage() {
 
       <Table<Paathashaala>
         columns={COLUMNS}
-        data={data?.data ?? []}
+        data={items}
         keyField="id"
         isLoading={isLoading}
         emptyMessage="No paathshaalas found."
@@ -167,7 +170,7 @@ export function PaathashaalaListPage() {
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
+                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span> ({totalElements} total)
               </p>
             </div>
             <div>

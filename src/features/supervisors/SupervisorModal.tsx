@@ -16,7 +16,7 @@ interface SupervisorModalProps {
 export function SupervisorModal({ isOpen, onClose, supervisor }: SupervisorModalProps) {
   const queryClient = useQueryClient()
   
-  const [form, setForm] = useState<CreateSupervisorRequest>({ name: '', phone: '' })
+  const [form, setForm] = useState<CreateSupervisorRequest>({ name: '', phone_number: '' })
   const [phoneError, setPhoneError] = useState<string>('')
 
   // Reset form when modal opens or supervisor prop changes
@@ -24,9 +24,12 @@ export function SupervisorModal({ isOpen, onClose, supervisor }: SupervisorModal
     if (isOpen) {
       setPhoneError('')
       if (supervisor) {
-        setForm({ name: supervisor.name, phone: supervisor.phone })
+        setForm({
+          name: supervisor.name,
+          phone_number: supervisor.phone_number || supervisor.phone || '',
+        })
       } else {
-        setForm({ name: '', phone: '' })
+        setForm({ name: '', phone_number: '' })
       }
     }
   }, [isOpen, supervisor])
@@ -42,7 +45,6 @@ export function SupervisorModal({ isOpen, onClose, supervisor }: SupervisorModal
       // 409 Conflict - phone number already in use
       setPhoneError('This phone number is already in use by another user.')
     } else {
-      // Other errors are handled by global interceptor, but we can clear the specific phone error
       setPhoneError('')
     }
   }
@@ -64,7 +66,7 @@ export function SupervisorModal({ isOpen, onClose, supervisor }: SupervisorModal
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setPhoneError('') // clear previous errors before submitting
+    setPhoneError('')
     if (isEditing) {
       updateMutation.mutate(form)
     } else {
@@ -87,14 +89,14 @@ export function SupervisorModal({ isOpen, onClose, supervisor }: SupervisorModal
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <FormField
-          id="phone"
+          id="phone_number"
           label="Phone Number"
           type="tel"
           required
           error={phoneError}
           hint="Must be unique. Used for login/identification."
-          value={form.phone}
-          onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+          value={form.phone_number ?? ''}
+          onChange={(e) => setForm((f) => ({ ...f, phone_number: e.target.value, phone: e.target.value }))}
         />
 
         <div className="mt-6 flex justify-end space-x-3">

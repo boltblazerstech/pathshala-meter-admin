@@ -1,14 +1,18 @@
 // ---------------------------------------------------------------------------
-// Domain types — field names match Step 3 backend DTOs exactly (snake_case).
-// Nothing needs renaming when mocks are swapped for the real backend.
+// Domain types — compatible with both Spring Boot backend and MSW mocks.
 // ---------------------------------------------------------------------------
 
 // ── Pagination ───────────────────────────────────────────────────────────────
 export interface PaginatedResponse<T> {
-  data: T[]
-  total: number
-  page: number
-  limit: number
+  content?: T[]
+  data?: T[]
+  total?: number
+  totalElements?: number
+  totalPages?: number
+  page?: number
+  size?: number
+  limit?: number
+  last?: boolean
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -18,28 +22,31 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  access_token: string
-  user: AdminUser
+  token?: string
+  access_token?: string
+  user?: AdminUser
 }
 
 export interface AdminUser {
   id: string
-  name: string
+  name?: string
   email: string
-  role: 'super_admin' | 'admin'
+  role?: 'super_admin' | 'admin'
 }
 
 // ── Paathshaalas ─────────────────────────────────────────────────────────────
 export interface Paathashaala {
   id: string
   name: string
-  map_link: string
+  map_link?: string
+  source_map_link?: string
   lat: number
   lng: number
-  coordinate_confidence: 'parsed' | 'fallback'
-  is_active: boolean
-  created_at: string
-  updated_at: string
+  coordinate_confidence?: 'parsed' | 'fallback' | 'HIGH' | 'LOW' | string
+  active?: boolean
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface CreatePaathashaalaRequest {
@@ -53,18 +60,22 @@ export type UpdatePaathashaalaRequest = Partial<CreatePaathashaalaRequest>
 export interface Supervisor {
   id: string
   name: string
-  phone: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
+  phone?: string
+  phone_number?: string
+  active?: boolean
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface CreateSupervisorRequest {
   name: string
-  phone: string
+  phone?: string
+  phone_number?: string
 }
 
 export type UpdateSupervisorRequest = Partial<CreateSupervisorRequest> & {
+  active?: boolean
   is_active?: boolean
 }
 
@@ -72,40 +83,53 @@ export type UpdateSupervisorRequest = Partial<CreateSupervisorRequest> & {
 export interface Teacher {
   id: string
   name: string
-  phone: string
-  assigned_paathshaala_id: string
-  paathashaala_name: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
+  phone?: string
+  phone_number?: string
+  paathshaala_id?: string
+  assigned_paathshaala_id?: string
+  paathshaala_name?: string
+  paathashaala_name?: string
+  active?: boolean
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface CreateTeacherRequest {
   name: string
-  phone: string
-  assigned_paathshaala_id: string
+  phone?: string
+  phone_number?: string
+  paathshaala_id?: string
+  assigned_paathshaala_id?: string
 }
 
 export type UpdateTeacherRequest = Partial<CreateTeacherRequest> & {
+  active?: boolean
   is_active?: boolean
 }
 
 // ── Tracking Windows ─────────────────────────────────────────────────────────
 export interface UserTrackingWindow {
+  window_id?: string
   user_id: string
   user_name: string
-  user_type: 'supervisor' | 'teacher'
-  paathashaala_name: string
+  role?: string
+  user_type?: 'supervisor' | 'teacher' | string
+  paathshaala_name?: string
+  paathashaala_name?: string
   start_time: string        // HH:MM 24-hr
   end_time: string          // HH:MM 24-hr
   interval_minutes: number
+  effective_from_date?: string
+  effective_from?: string
 }
 
 export interface UpdateWindowRequest {
   start_time: string
   end_time: string
   interval_minutes: number
-  effective_from: string    // YYYY-MM-DD
+  effective_from_date?: string
+  effective_from?: string
 }
 
 export interface BulkUpdateWindowRequest extends UpdateWindowRequest {
@@ -118,16 +142,16 @@ export interface LiveSyncStatus {
   user_name: string
   user_type: 'supervisor' | 'teacher'
   phone: string
-  assigned_paathshaala_id: string | null   // null for supervisors (they pick one)
+  assigned_paathshaala_id: string | null
   assigned_paathshaala_name: string | null
   last_lat: number | null
   last_lng: number | null
-  last_synced_at: string | null            // ISO-8601 in IST from serializer
+  last_synced_at: string | null
   sync_status: 'online' | 'offline' | 'pending_sync'
 }
 
 export interface LiveSyncResponse {
-  as_of: string   // ISO-8601 snapshot time
+  as_of: string
   users: LiveSyncStatus[]
 }
 
@@ -136,14 +160,14 @@ export interface DistanceLookupResponse {
   user_id: string
   paathashaala_id: string
   distance_meters: number
-  is_within_range: boolean   // true if ≤ 200m
+  is_within_range: boolean
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
 export interface ExportRequest {
   from: string         // YYYY-MM-DD
   to: string           // YYYY-MM-DD
-  user_id?: string     // specific user_id, or undefined/'all' for all users
+  user_id?: string
   format?: 'csv' | 'xlsx'
 }
 

@@ -102,7 +102,7 @@ function SupervisorRow({ user }: { user: LiveSyncStatus }) {
           onChange={(e) => setSelectedPaathashaalaId(e.target.value || null)}
         >
           <option value="">Select paathshaala…</option>
-          {paathshaalasData?.data.map((p) => (
+          {(paathshaalasData?.content ?? paathshaalasData?.data ?? []).map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>

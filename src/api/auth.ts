@@ -5,7 +5,10 @@ import type { LoginRequest, LoginResponse, AdminUser } from '../types'
 // POST /auth/login
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
   const { data } = await apiClient.post<LoginResponse>('/auth/login', payload)
-  setToken(data.access_token)
+  const authToken = data.token || data.access_token
+  if (authToken) {
+    setToken(authToken)
+  }
   return data
 }
 

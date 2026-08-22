@@ -24,7 +24,10 @@ export function PaathashaalaModal({ isOpen, onClose, paathashaala }: Paathashaal
       setStep('form')
       setResultData(null)
       if (paathashaala) {
-        setForm({ name: paathashaala.name, map_link: paathashaala.map_link })
+        setForm({
+          name: paathashaala.name,
+          map_link: paathashaala.map_link || paathashaala.source_map_link || '',
+        })
       } else {
         setForm({ name: '', map_link: '' })
       }

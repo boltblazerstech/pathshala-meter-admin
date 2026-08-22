@@ -40,9 +40,9 @@ export function SupervisorListPage() {
     }
   })
 
-  // We use PATCH to reactivate
+  // We use PATCH / PUT to reactivate
   const activateMutation = useMutation({
-    mutationFn: (id: string) => updateSupervisor(id, { is_active: true }),
+    mutationFn: (id: string) => updateSupervisor(id, { active: true, is_active: true }),
     onSuccess: () => {
       toast.success('Supervisor activated')
       queryClient.invalidateQueries({ queryKey: ['supervisors'] })
@@ -60,7 +60,8 @@ export function SupervisorListPage() {
   }
 
   function handleToggleStatus(s: Supervisor) {
-    if (s.is_active) {
+    const isActive = s.active ?? s.is_active ?? true
+    if (isActive) {
       if (confirm('Are you sure you want to deactivate this Supervisor? They will lose access.')) {
         deactivateMutation.mutate(s.id)
       }
@@ -70,37 +71,50 @@ export function SupervisorListPage() {
   }
 
   const COLUMNS: Column<Supervisor>[] = [
-    { key: 'name',  header: 'Name' },
-    { key: 'phone', header: 'Phone' },
+    { key: 'name', header: 'Name' },
+    {
+      key: 'phone',
+      header: 'Phone',
+      render: (row) => row.phone_number || row.phone || '—',
+    },
     {
       key: 'is_active',
       header: 'Status',
-      render: (row) => <StatusPill status={row.is_active ? 'active' : 'inactive'} />,
+      render: (row) => {
+        const isActive = row.active ?? row.is_active ?? true
+        return <StatusPill status={isActive ? 'active' : 'inactive'} />
+      },
     },
     {
       key: 'actions',
       header: 'Actions',
-      render: (row) => (
-        <div className="flex space-x-3 text-sm font-medium">
-          <button
-            onClick={() => handleEdit(row)}
-            className="text-indigo-600 hover:text-indigo-900"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleToggleStatus(row)}
-            disabled={deactivateMutation.isPending || activateMutation.isPending}
-            className={`${row.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'} disabled:opacity-50`}
-          >
-            {row.is_active ? 'Deactivate' : 'Activate'}
-          </button>
-        </div>
-      ),
+      render: (row) => {
+        const isActive = row.active ?? row.is_active ?? true
+        return (
+          <div className="flex space-x-3 text-sm font-medium">
+            <button
+              onClick={() => handleEdit(row)}
+              className="text-indigo-600 hover:text-indigo-900"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleToggleStatus(row)}
+              disabled={deactivateMutation.isPending || activateMutation.isPending}
+              className={`${isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'} disabled:opacity-50`}
+            >
+              {isActive ? 'Deactivate' : 'Activate'}
+            </button>
+          </div>
+        )
+      },
     },
   ]
 
-  const totalPages = data ? Math.ceil(data.total / data.limit) : 1
+  const items = data?.content ?? data?.data ?? []
+  const totalElements = data?.totalElements ?? data?.total ?? items.length
+  const pageSize = data?.size ?? data?.limit ?? 10
+  const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalElements / pageSize))
 
   return (
     <div className="space-y-4">
@@ -125,7 +139,7 @@ export function SupervisorListPage() {
 
       <Table<Supervisor>
         columns={COLUMNS}
-        data={data?.data ?? []}
+        data={items}
         keyField="id"
         isLoading={isLoading}
         emptyMessage="No supervisors found."
@@ -153,7 +167,7 @@ export function SupervisorListPage() {
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
+                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span> ({totalElements} total)
               </p>
             </div>
             <div>

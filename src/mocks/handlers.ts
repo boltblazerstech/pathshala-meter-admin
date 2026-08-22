@@ -90,13 +90,13 @@ function generateLiveSyncUsers(): LiveSyncStatus[] {
   const users: LiveSyncStatus[] = []
 
   for (const s of SUPERVISORS) {
-    if (!s.is_active) continue
+    if (!s.is_active && !s.active) continue
     const status = syncStatuses[Math.floor(Math.random() * syncStatuses.length)]
     users.push({
       user_id: s.id,
       user_name: s.name,
       user_type: 'supervisor',
-      phone: s.phone,
+      phone: s.phone_number || s.phone || '',
       assigned_paathshaala_id: null,   // supervisors don't have a fixed assignment
       assigned_paathshaala_name: null,
       last_lat: status !== 'offline' ? 40.7128 + (Math.random() - 0.5) * 0.005 : null,
@@ -107,15 +107,15 @@ function generateLiveSyncUsers(): LiveSyncStatus[] {
   }
 
   for (const t of TEACHERS) {
-    if (!t.is_active) continue
+    if (!t.is_active && !t.active) continue
     const status = syncStatuses[Math.floor(Math.random() * syncStatuses.length)]
     users.push({
       user_id: t.id,
       user_name: t.name,
       user_type: 'teacher',
-      phone: t.phone,
-      assigned_paathshaala_id: t.assigned_paathshaala_id,
-      assigned_paathshaala_name: t.paathashaala_name,
+      phone: t.phone_number || t.phone || '',
+      assigned_paathshaala_id: t.paathshaala_id || t.assigned_paathshaala_id || null,
+      assigned_paathshaala_name: t.paathshaala_name || t.paathashaala_name || null,
       last_lat: status !== 'offline' ? 40.7128 + (Math.random() - 0.5) * 0.005 : null,
       last_lng: status !== 'offline' ? -74.0060 + (Math.random() - 0.5) * 0.005 : null,
       last_synced_at: status !== 'offline' ? nowIST() : null,
@@ -198,7 +198,7 @@ export const handlers = [
     if (index === -1) return new HttpResponse(null, { status: 404 })
 
     const p = PAATHSHAALAS[index]
-    const map_link = body.map_link ?? p.map_link
+    const map_link = body.map_link ?? p.map_link ?? ''
     const isFallback = !map_link.includes(',')
 
     const updatedP = {
@@ -232,7 +232,7 @@ export const handlers = [
 
     let filtered = SUPERVISORS
     if (search) {
-      filtered = filtered.filter(s => s.name.toLowerCase().includes(search) || s.phone.includes(search))
+      filtered = filtered.filter(s => s.name.toLowerCase().includes(search) || (s.phone_number || s.phone || '').includes(search))
     }
 
     const start = (page - 1) * limit
@@ -312,7 +312,7 @@ export const handlers = [
 
     let filtered = TEACHERS
     if (search) {
-      filtered = filtered.filter(t => t.name.toLowerCase().includes(search) || t.phone.includes(search))
+      filtered = filtered.filter(t => t.name.toLowerCase().includes(search) || (t.phone_number || t.phone || '').includes(search))
     }
 
     const start = (page - 1) * limit

@@ -19,8 +19,8 @@ export function TeacherModal({ isOpen, onClose, teacher }: TeacherModalProps) {
   
   const [form, setForm] = useState<CreateTeacherRequest>({ 
     name: '', 
-    phone: '', 
-    assigned_paathshaala_id: '' 
+    phone_number: '', 
+    paathshaala_id: '' 
   })
   const [phoneError, setPhoneError] = useState<string>('')
 
@@ -31,6 +31,8 @@ export function TeacherModal({ isOpen, onClose, teacher }: TeacherModalProps) {
     enabled: isOpen,
   })
 
+  const paathshaalasList = paathshaalasData?.content ?? paathshaalasData?.data ?? []
+
   // Reset form when modal opens or teacher prop changes
   useEffect(() => {
     if (isOpen) {
@@ -38,11 +40,11 @@ export function TeacherModal({ isOpen, onClose, teacher }: TeacherModalProps) {
       if (teacher) {
         setForm({ 
           name: teacher.name, 
-          phone: teacher.phone,
-          assigned_paathshaala_id: teacher.assigned_paathshaala_id
+          phone_number: teacher.phone_number || teacher.phone || '',
+          paathshaala_id: teacher.paathshaala_id || teacher.assigned_paathshaala_id || ''
         })
       } else {
-        setForm({ name: '', phone: '', assigned_paathshaala_id: '' })
+        setForm({ name: '', phone_number: '', paathshaala_id: '' })
       }
     }
   }, [isOpen, teacher])
@@ -75,11 +77,12 @@ export function TeacherModal({ isOpen, onClose, teacher }: TeacherModalProps) {
 
   const isPending = createMutation.isPending || updateMutation.isPending
   const isEditing = !!teacher
-  const isSubmitDisabled = isPending || !form.assigned_paathshaala_id
+  const selectedPaathshaalaId = form.paathshaala_id || form.assigned_paathshaala_id
+  const isSubmitDisabled = isPending || !selectedPaathshaalaId
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setPhoneError('') // clear previous errors before submitting
+    setPhoneError('')
     if (isEditing) {
       updateMutation.mutate(form)
     } else {
@@ -102,26 +105,26 @@ export function TeacherModal({ isOpen, onClose, teacher }: TeacherModalProps) {
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <FormField
-          id="phone"
+          id="phone_number"
           label="Phone Number"
           type="tel"
           required
           error={phoneError}
           hint="Must be unique. Used for login/identification."
-          value={form.phone}
-          onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+          value={form.phone_number ?? ''}
+          onChange={(e) => setForm((f) => ({ ...f, phone_number: e.target.value, phone: e.target.value }))}
         />
         
         <FormField
           as="select"
-          id="assigned_paathshaala_id"
+          id="paathshaala_id"
           label="Assigned Paathshaala"
           required
-          value={form.assigned_paathshaala_id}
-          onChange={(e) => setForm((f) => ({ ...f, assigned_paathshaala_id: e.target.value }))}
+          value={selectedPaathshaalaId ?? ''}
+          onChange={(e) => setForm((f) => ({ ...f, paathshaala_id: e.target.value, assigned_paathshaala_id: e.target.value }))}
         >
           <option value="" disabled>Select a paathshaala</option>
-          {paathshaalasData?.data.map((p) => (
+          {paathshaalasList.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
