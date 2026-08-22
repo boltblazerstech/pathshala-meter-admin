@@ -1,15 +1,25 @@
 import apiClient from '../lib/apiClient'
-import type { LiveViewResponse } from '../types'
+import type { LiveSyncResponse, DistanceLookupResponse } from '../types'
 
-export interface LiveViewParams {
-  paathashaalaId?: string
-  windowId?: string
+// TODO [3f]: GET /api/admin/locations/live — returns LiveSyncResponse
+// This is the primary endpoint for the Live View page.
+// Returns every active supervisor + teacher with their last-known
+// coordinates, last_synced_at timestamp, and sync_status.
+export async function getLiveSync(): Promise<LiveSyncResponse> {
+  const { data } = await apiClient.get<LiveSyncResponse>('/locations/live')
+  return data
 }
 
-// GET /locations/live
-// Returns the latest ping per teacher within currently-active tracking windows.
-// React Query is wired to refetch this on an interval for the Live View feature.
-export async function getLiveView(params?: LiveViewParams): Promise<LiveViewResponse> {
-  const { data } = await apiClient.get<LiveViewResponse>('/locations/live', { params })
+// TODO [3f]: GET /api/admin/locations/distance?user_id=X&paathashaala_id=Y
+// Called when an admin selects a paathshaala for a supervisor row,
+// or automatically for teachers (fixed assignment).
+// Returns the Haversine distance in meters and whether it's within 200m range.
+export async function getDistanceLookup(
+  userId: string,
+  paathashaalaId: string,
+): Promise<DistanceLookupResponse> {
+  const { data } = await apiClient.get<DistanceLookupResponse>('/locations/distance', {
+    params: { user_id: userId, paathashaala_id: paathashaalaId },
+  })
   return data
 }

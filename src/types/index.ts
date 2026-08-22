@@ -91,65 +91,60 @@ export type UpdateTeacherRequest = Partial<CreateTeacherRequest> & {
 }
 
 // ── Tracking Windows ─────────────────────────────────────────────────────────
-export type DayOfWeek = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun'
-
-export interface TrackingWindow {
-  id: string
-  paathashaala_id: string
+export interface UserTrackingWindow {
+  user_id: string
+  user_name: string
+  user_type: 'supervisor' | 'teacher'
   paathashaala_name: string
-  label: string
   start_time: string        // HH:MM 24-hr
   end_time: string          // HH:MM 24-hr
-  days_of_week: DayOfWeek[]
-  interval_minutes: number  // how often a teacher must ping within the window
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface CreateTrackingWindowRequest {
-  paathashaala_id: string
-  label: string
-  start_time: string
-  end_time: string
-  days_of_week: DayOfWeek[]
   interval_minutes: number
 }
 
-export type UpdateTrackingWindowRequest = Partial<CreateTrackingWindowRequest>
-
-// ── Locations / Live View ────────────────────────────────────────────────────
-export interface LocationPing {
-  teacher_id: string
-  teacher_name: string
-  paathashaala_id: string
-  paathashaala_name: string
-  lat: number
-  lng: number
-  coordinate_confidence: number   // 0–1 accuracy confidence score
-  timestamp: string               // ISO-8601
-  window_id: string
-  window_label: string
-  status: 'on_time' | 'late' | 'absent'
+export interface UpdateWindowRequest {
+  start_time: string
+  end_time: string
+  interval_minutes: number
+  effective_from: string    // YYYY-MM-DD
 }
 
-export interface LiveViewResponse {
+export interface BulkUpdateWindowRequest extends UpdateWindowRequest {
+  user_ids: string[]
+}
+
+// ── Live View / Sync Status (3f) ─────────────────────────────────────────────
+export interface LiveSyncStatus {
+  user_id: string
+  user_name: string
+  user_type: 'supervisor' | 'teacher'
+  phone: string
+  assigned_paathshaala_id: string | null   // null for supervisors (they pick one)
+  assigned_paathshaala_name: string | null
+  last_lat: number | null
+  last_lng: number | null
+  last_synced_at: string | null            // ISO-8601 in IST from serializer
+  sync_status: 'online' | 'offline' | 'pending_sync'
+}
+
+export interface LiveSyncResponse {
   as_of: string   // ISO-8601 snapshot time
-  pings: LocationPing[]
+  users: LiveSyncStatus[]
+}
+
+/** Result from GET /locations/distance?user_id=X&paathashaala_id=Y */
+export interface DistanceLookupResponse {
+  user_id: string
+  paathashaala_id: string
+  distance_meters: number
+  is_within_range: boolean   // true if ≤ 200m
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
 export interface ExportRequest {
-  paathashaala_id?: string
-  teacher_id?: string
-  from: string     // YYYY-MM-DD
-  to: string       // YYYY-MM-DD
-  format: 'csv' | 'xlsx'
-}
-
-export interface ExportResponse {
-  download_url: string
-  expires_at: string
+  from: string         // YYYY-MM-DD
+  to: string           // YYYY-MM-DD
+  user_id?: string     // specific user_id, or undefined/'all' for all users
+  format?: 'csv' | 'xlsx'
 }
 
 // ── Generic API Error ─────────────────────────────────────────────────────────

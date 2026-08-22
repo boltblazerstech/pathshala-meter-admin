@@ -3,10 +3,11 @@ import type {
   Paathashaala,
   Supervisor,
   Teacher,
-  TrackingWindow,
-  LocationPing,
-  PaginatedResponse,
-  LiveViewResponse
+  UserTrackingWindow,
+  LiveSyncStatus,
+  LiveSyncResponse,
+  DistanceLookupResponse,
+  ExportRequest,
 } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.placeholder.local/api'
@@ -60,48 +61,69 @@ let TEACHERS: Teacher[] = [
   }
 ]
 
-const TRACKING_WINDOWS: TrackingWindow[] = [
-  {
-    id: 'w1', paathashaala_id: 'p1', paathashaala_name: 'Downtown Center',
-    label: 'Morning Session', start_time: '08:00', end_time: '12:00',
-    days_of_week: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], interval_minutes: 30,
-    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
-  },
-  {
-    id: 'w2', paathashaala_id: 'p2', paathashaala_name: 'Uptown Academy',
-    label: 'Afternoon Session', start_time: '13:00', end_time: '17:00',
-    days_of_week: ['Mon', 'Wed', 'Fri'], interval_minutes: 60,
-    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
-  }
-]
-
-// Generate slightly randomized pings for Live View
-function generateLivePings(): LocationPing[] {
-  const statuses: ('on_time' | 'late' | 'absent')[] = ['on_time', 'late', 'absent']
-  return TEACHERS.map((t, i) => ({
-    teacher_id: t.id,
-    teacher_name: t.name,
-    paathashaala_id: t.assigned_paathshaala_id,
-    paathashaala_name: t.paathashaala_name,
-    lat: 40.7128 + (Math.random() - 0.5) * 0.01,
-    lng: -74.0060 + (Math.random() - 0.5) * 0.01,
-    coordinate_confidence: 0.8 + Math.random() * 0.2,
-    timestamp: new Date(Date.now() - Math.random() * 600000).toISOString(),
-    window_id: i % 2 === 0 ? 'w1' : 'w2',
-    window_label: i % 2 === 0 ? 'Morning Session' : 'Afternoon Session',
-    status: statuses[Math.floor(Math.random() * statuses.length)]
-  }))
+// Map of user_id to their active tracking window configuration
+const USER_WINDOWS: Record<string, { start_time: string, end_time: string, interval_minutes: number }> = {
+  's1': { start_time: '08:00', end_time: '14:00', interval_minutes: 30 },
+  't1': { start_time: '08:00', end_time: '15:00', interval_minutes: 60 },
 }
 
-// ── Handlers ──────────────────────────────────────────────────────────────────
+// ── Haversine distance (meters) — used by mock distance endpoint ────────────
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000 // Earth radius in meters
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
 
-function wrap<T>(data: T[]): PaginatedResponse<T> {
-  return {
-    data,
-    total: data.length,
-    page: 1,
-    limit: 50
+// Mock IST timestamp formatter (UTC+5:30)
+function nowIST(): string {
+  return new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+}
+
+// Generate live sync status rows for every active supervisor + teacher
+function generateLiveSyncUsers(): LiveSyncStatus[] {
+  const syncStatuses: ('online' | 'offline' | 'pending_sync')[] = ['online', 'offline', 'pending_sync']
+  const users: LiveSyncStatus[] = []
+
+  for (const s of SUPERVISORS) {
+    if (!s.is_active) continue
+    const status = syncStatuses[Math.floor(Math.random() * syncStatuses.length)]
+    users.push({
+      user_id: s.id,
+      user_name: s.name,
+      user_type: 'supervisor',
+      phone: s.phone,
+      assigned_paathshaala_id: null,   // supervisors don't have a fixed assignment
+      assigned_paathshaala_name: null,
+      last_lat: status !== 'offline' ? 40.7128 + (Math.random() - 0.5) * 0.005 : null,
+      last_lng: status !== 'offline' ? -74.0060 + (Math.random() - 0.5) * 0.005 : null,
+      last_synced_at: status !== 'offline' ? nowIST() : null,
+      sync_status: status,
+    })
   }
+
+  for (const t of TEACHERS) {
+    if (!t.is_active) continue
+    const status = syncStatuses[Math.floor(Math.random() * syncStatuses.length)]
+    users.push({
+      user_id: t.id,
+      user_name: t.name,
+      user_type: 'teacher',
+      phone: t.phone,
+      assigned_paathshaala_id: t.assigned_paathshaala_id,
+      assigned_paathshaala_name: t.paathashaala_name,
+      last_lat: status !== 'offline' ? 40.7128 + (Math.random() - 0.5) * 0.005 : null,
+      last_lng: status !== 'offline' ? -74.0060 + (Math.random() - 0.5) * 0.005 : null,
+      last_synced_at: status !== 'offline' ? nowIST() : null,
+      sync_status: status,
+    })
+  }
+
+  return users
 }
 
 export const handlers = [
@@ -379,25 +401,157 @@ export const handlers = [
   // Tracking Windows
   http.get(`${API_BASE_URL}/tracking-windows`, async () => {
     await delay(500)
-    return HttpResponse.json(wrap(TRACKING_WINDOWS))
+    // Ignore date for mock purposes, just return all users with their current windows
+    const users: UserTrackingWindow[] = []
+    
+    // Default window if unassigned
+    const defaultWindow = { start_time: '08:00', end_time: '16:00', interval_minutes: 30 }
+
+    for (const s of SUPERVISORS) {
+      if (!s.is_active) continue
+      const w = USER_WINDOWS[s.id] || defaultWindow
+      users.push({
+        user_id: s.id,
+        user_name: s.name,
+        user_type: 'supervisor',
+        paathashaala_name: 'N/A', // Assuming supervisors in this context might not have it displayed, or we can look it up
+        start_time: w.start_time,
+        end_time: w.end_time,
+        interval_minutes: w.interval_minutes
+      })
+    }
+
+    for (const t of TEACHERS) {
+      if (!t.is_active) continue
+      const w = USER_WINDOWS[t.id] || defaultWindow
+      users.push({
+        user_id: t.id,
+        user_name: t.name,
+        user_type: 'teacher',
+        paathashaala_name: t.paathashaala_name,
+        start_time: w.start_time,
+        end_time: w.end_time,
+        interval_minutes: w.interval_minutes
+      })
+    }
+
+    return HttpResponse.json(users) // not paginated for bulk-apply ease, or wrap in data array
   }),
 
-  // Locations / Live View
+  http.put(`${API_BASE_URL}/tracking-windows/:id`, async ({ request, params }) => {
+    await delay(400)
+    const body = await request.json() as { start_time: string, end_time: string, interval_minutes: number, effective_from: string }
+    
+    USER_WINDOWS[params.id as string] = {
+      start_time: body.start_time,
+      end_time: body.end_time,
+      interval_minutes: body.interval_minutes
+    }
+
+    return HttpResponse.json({ success: true })
+  }),
+
+  http.post(`${API_BASE_URL}/tracking-windows/bulk`, async ({ request }) => {
+    await delay(600)
+    const body = await request.json() as { user_ids: string[], start_time: string, end_time: string, interval_minutes: number, effective_from: string }
+    
+    for (const uid of body.user_ids) {
+      USER_WINDOWS[uid] = {
+        start_time: body.start_time,
+        end_time: body.end_time,
+        interval_minutes: body.interval_minutes
+      }
+    }
+
+    return HttpResponse.json({ success: true })
+  }),
+
+  // Locations / Live Sync — TODO [3f]: GET /api/admin/locations/live
   http.get(`${API_BASE_URL}/locations/live`, async () => {
     await delay(400)
-    const response: LiveViewResponse = {
+    const response: LiveSyncResponse = {
       as_of: new Date().toISOString(),
-      pings: generateLivePings()
+      users: generateLiveSyncUsers()
     }
     return HttpResponse.json(response)
   }),
 
-  // Export
-  http.post(`${API_BASE_URL}/export`, async () => {
-    await delay(1500)
-    return HttpResponse.json({
-      download_url: 'https://example.com/mock-export.xlsx',
-      expires_at: new Date(Date.now() + 3600000).toISOString()
+  // Distance Lookup — TODO [3f]: GET /api/admin/locations/distance?user_id=X&paathashaala_id=Y
+  http.get(`${API_BASE_URL}/locations/distance`, async ({ request }) => {
+    await delay(300)
+    const url = new URL(request.url)
+    const userId = url.searchParams.get('user_id')!
+    const paathashaalaId = url.searchParams.get('paathashaala_id')!
+
+    // Find user's last known location from our mock set
+    const allUsers = generateLiveSyncUsers()
+    const user = allUsers.find(u => u.user_id === userId)
+    const paathshaala = PAATHSHAALAS.find(p => p.id === paathashaalaId)
+
+    if (!user || !paathshaala) {
+      return new HttpResponse(null, { status: 404 })
+    }
+
+    // If user is offline (no coords), return a large distance
+    const dist = (user.last_lat != null && user.last_lng != null)
+      ? haversine(user.last_lat, user.last_lng, paathshaala.lat, paathshaala.lng)
+      : 99999
+
+    const result: DistanceLookupResponse = {
+      user_id: userId,
+      paathashaala_id: paathashaalaId,
+      distance_meters: Math.round(dist),
+      is_within_range: dist <= 200,
+    }
+
+    return HttpResponse.json(result)
+  }),
+
+  // Export — returns a mocked CSV blob response
+  http.post(`${API_BASE_URL}/export`, async ({ request }) => {
+    await delay(800)
+    let body: Partial<ExportRequest> = {}
+    try {
+      body = (await request.json()) as Partial<ExportRequest>
+    } catch {
+      // no-op
+    }
+
+    const fromDate = body.from || '2026-08-01'
+    const toDate = body.to || '2026-08-22'
+    const filterUserId = body.user_id && body.user_id !== 'all' ? body.user_id : null
+
+    const allUsers = [
+      ...SUPERVISORS.map(s => ({ id: s.id, name: s.name, role: 'Supervisor', school: 'N/A' })),
+      ...TEACHERS.map(t => ({ id: t.id, name: t.name, role: 'Teacher', school: t.paathashaala_name })),
+    ]
+
+    const selectedUsers = filterUserId
+      ? allUsers.filter(u => u.id === filterUserId)
+      : allUsers
+
+    const header = 'Date,User ID,User Name,Role,Assigned Paathshaala,Window Start,Window End,Sync Status,Distance (m),Presence Status\n'
+    const rows: string[] = []
+
+    for (const u of selectedUsers) {
+      rows.push(
+        `${fromDate},"${u.id}","${u.name}","${u.role}","${u.school}","08:00","15:00","online","64","Present"`
+      )
+      if (fromDate !== toDate) {
+        rows.push(
+          `${toDate},"${u.id}","${u.name}","${u.role}","${u.school}","08:00","15:00","online","112","Present"`
+        )
+      }
+    }
+
+    const csvContent = header + rows.join('\n')
+
+    return new HttpResponse(csvContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="attendance_export_${fromDate}_to_${toDate}.csv"`,
+      },
     })
   })
 ]

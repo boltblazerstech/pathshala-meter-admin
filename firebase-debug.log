@@ -1,0 +1,98 @@
+[debug] [2026-08-22T11:31:04.355Z] ----------------------------------------------------------------------
+[debug] [2026-08-22T11:31:04.359Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\lenovo\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init hosting
+[debug] [2026-08-22T11:31:04.359Z] CLI Version:   15.27.0
+[debug] [2026-08-22T11:31:04.359Z] Platform:      win32
+[debug] [2026-08-22T11:31:04.359Z] Node Version:  v24.14.0
+[debug] [2026-08-22T11:31:04.360Z] Detected Agent: unknown
+[debug] [2026-08-22T11:31:04.360Z] Time:          Sat Aug 22 2026 17:01:04 GMT+0530 (India Standard Time)
+[debug] [2026-08-22T11:31:04.360Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  D:\BB Client Projects\pathshala-meter\pathshala-meter-admin
+
+[info] 
+=== Account Setup
+[info] 
+[info] Which account do you want to use for this project? Choose an account or add a new one now
+[info] 
+[debug] [2026-08-22T11:31:54.459Z] setProjectAccount(D:\BB Client Projects\pathshala-meter\pathshala-meter-admin, tribaltracking2026@gmail.com)
+[info] 
+[info] +  Using account: tribaltracking2026@gmail.com 
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[info] i  If you want to create a project in a Google Cloud organization or folder, please use "firebase projects:create" instead, and return to this command when you've created the project. 
+[debug] [2026-08-22T11:32:35.445Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-22T11:32:35.446Z] > authorizing via signed-in user (tribaltracking2026@gmail.com)
+[debug] [2026-08-22T11:32:50.850Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:32:50.851Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:32:50.853Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:32:50.854Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":"192108"}
+[debug] [2026-08-22T11:32:51.385Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:32:51.385Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"project-6328436224392803083"}
+[debug] [2026-08-22T11:33:20.201Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:20.202Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:20.203Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:33:20.203Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":"1921086416"}
+[debug] [2026-08-22T11:33:20.959Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:33:20.960Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"project-4259080534433189756"}
+[debug] [2026-08-22T11:33:32.491Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:32.491Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:32.493Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:33:32.493Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":" project-4259080534433189756"}
+[debug] [2026-08-22T11:33:32.957Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:33:32.957Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"project-4259080534433189756"}
+[debug] [2026-08-22T11:33:36.774Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:36.775Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:36.775Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:33:36.776Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":" project-4259080534433189759"}
+[debug] [2026-08-22T11:33:37.175Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:33:37.175Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"project-4259080534433189759"}
+[debug] [2026-08-22T11:33:51.801Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:51.801Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:51.802Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:33:51.802Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":" project-425908053455555555555"}
+[debug] [2026-08-22T11:33:52.263Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:33:52.264Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"project-425908053455555555555"}
+[debug] [2026-08-22T11:33:55.979Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:55.979Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:33:55.980Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:33:55.980Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":" project-42590805345555555555"}
+[debug] [2026-08-22T11:33:56.382Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:33:56.383Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"project-42590805345555555555"}
+[debug] [2026-08-22T11:34:04.805Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:34:04.805Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:34:04.806Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:34:04.806Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":" hfhhhshhayyrhah"}
+[debug] [2026-08-22T11:34:06.080Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:34:06.080Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"hfhhhshhayyrhah"}
+[debug] [2026-08-22T11:34:09.018Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:34:09.018Z] Checked if tokens are valid: true, expires at: 1787401813888
+[debug] [2026-08-22T11:34:09.019Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1/projects:checkProjectId [none]
+[debug] [2026-08-22T11:34:09.019Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"proposedId":" hfhhhshhayyrhahsstss"}
+[debug] [2026-08-22T11:34:09.711Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1/projects:checkProjectId 200
+[debug] [2026-08-22T11:34:09.711Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1/projects:checkProjectId {"projectIdStatus":"PROJECT_ID_NOT_VALID","suggestedProjectId":"hfhhhshhayyrhahsstss"}
+[debug] [2026-08-22T11:36:04.502Z] ExitPromptError: User force closed the prompt with SIGINT
+    at Interface.sigint (C:\Users\lenovo\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\@inquirer\core\dist\commonjs\lib\create-prompt.js:101:37)
+    at Interface.emit (node:events:508:28)
+    at [_ttyWrite] [as _ttyWrite] (node:internal/readline/interface:1327:18)
+    at ReadStream.onkeypress (node:internal/readline/interface:284:20)
+    at ReadStream.emit (node:events:520:35)
+    at emitKeys (node:internal/readline/utils:371:14)
+    at emitKeys.next (<anonymous>)
+    at ReadStream.onData (node:internal/readline/emitKeypressEvents:64:36)
+    at ReadStream.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+[error] 
+[error] Error: An unexpected error has occurred.

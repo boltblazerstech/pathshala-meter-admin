@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listTeachers, updateTeacher, deleteTeacher } from '../../api/teachers'
 import { Table, type Column } from '../../components/Table'
@@ -14,16 +14,14 @@ export function TeacherListPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  // Simple debounce logic for search
-  import('react').then(({ useEffect }) => {
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedSearch(search)
-        setPage(1) // reset to first page on search
-      }, 300)
-      return () => clearTimeout(handler)
-    }, [search])
-  })
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [search])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null)
