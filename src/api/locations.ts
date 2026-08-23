@@ -23,3 +23,8 @@ export async function getDistanceLookup(
   })
   return data
 }
+
+// POST /api/admin/locations/request/{userId}
+export async function requestLocationUpdate(userId: string): Promise<void> {
+  await apiClient.post(`/locations/request/${userId}`)
+}

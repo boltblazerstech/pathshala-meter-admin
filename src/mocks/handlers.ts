@@ -29,13 +29,41 @@ let PAATHSHAALAS: Paathashaala[] = [
     id: 'p3', name: 'Westside Hub (Inactive)', map_link: 'https://maps.google.com/?q=40.7484,-73.9857',
     lat: 40.7484, lng: -73.9857, coordinate_confidence: 'parsed',
     is_active: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
-  }
+  },
+  {
+    id: 'p4', name: 'Eastside Branch (Manual)', map_link: '',
+    lat: 40.7580, lng: -73.9855, coordinate_confidence: 'manual',
+    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  },
+  {
+    id: 'p5', name: 'Northside Point (Bad Link)', map_link: 'https://maps.app.goo.gl/deadlink',
+    lat: 40.7128, lng: -74.0060, coordinate_confidence: 'unresolved',
+    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  },
 ]
+
+// ── Mock coordinate extraction helper ────────────────────────────────────────
+function mockExtractCoords(map_link: string): { lat: number; lng: number; confidence: 'parsed' | 'fallback' | 'unresolved' } | null {
+  if (!map_link) return null
+  // Simulate short link failure (for demo purposes maps.app.goo.gl resolves but deadlink does not)
+  if (map_link.includes('deadlink') || map_link.includes('bad')) {
+    return null // triggers 'unresolved'
+  }
+  // Simulate parsed: URL contains numeric coords
+  if (map_link.match(/[-\d]+\.\d+,\s*[-\d]+\.\d+/)) {
+    const m = map_link.match(/([-\d]+\.\d+),\s*([-\d]+\.\d+)/)!
+    return { lat: parseFloat(m[1]), lng: parseFloat(m[2]), confidence: 'parsed' }
+  }
+  // Fallback: URL has text but no explicit coords
+  return { lat: 40.0 + Math.random() * 0.1, lng: -74.0 + Math.random() * 0.1, confidence: 'fallback' }
+}
+
 
 let SUPERVISORS: Supervisor[] = [
   {
     id: 's1', name: 'Super Admin', phone: '555-9001',
-    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    last_location_lat: 23.8051, last_location_lng: 86.4558, last_location_at: new Date(Date.now() - 5 * 60000).toISOString()
   },
   {
     id: 's2', name: 'Sarah Supervisor', phone: '555-9002',
@@ -47,7 +75,8 @@ let TEACHERS: Teacher[] = [
   {
     id: 't1', name: 'Tom Teacher', phone: '555-8001',
     assigned_paathshaala_id: 'p1', paathashaala_name: 'Downtown Center',
-    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    last_location_lat: 40.7130, last_location_lng: -74.0050, last_location_at: new Date(Date.now() - 15 * 60000).toISOString()
   },
   {
     id: 't2', name: 'Tina Tutor', phone: '555-8002',
@@ -174,15 +203,35 @@ export const handlers = [
 
   http.post(`${API_BASE_URL}/paathshaalas`, async ({ request }) => {
     await delay(600)
-    const body = await request.json() as { name: string, map_link: string }
-    const isFallback = !body.map_link.includes(',') // simple mock parsing logic
+    const body = await request.json() as { name: string; map_link?: string; latitude?: number; longitude?: number }
+
+    // Manual lat/lng takes priority — if both provided, skip link parsing
+    let lat: number | null = null
+    let lng: number | null = null
+    let confidence: Paathashaala['coordinate_confidence'] = 'unresolved'
+
+    if (body.latitude != null && body.longitude != null) {
+      lat = body.latitude
+      lng = body.longitude
+      confidence = 'manual'
+    } else if (body.map_link) {
+      const extracted = mockExtractCoords(body.map_link)
+      if (extracted) {
+        lat = extracted.lat
+        lng = extracted.lng
+        confidence = extracted.confidence
+      }
+      // else: link failed to parse → lat/lng null, confidence 'unresolved'
+    }
+
     const newP: Paathashaala = {
       id: `p${Date.now()}`,
       name: body.name,
-      map_link: body.map_link,
-      lat: isFallback ? 40.0 : 40.7128,
-      lng: isFallback ? -73.0 : -74.0060,
-      coordinate_confidence: isFallback ? 'fallback' : 'parsed',
+      map_link: body.map_link || '',
+      lat,
+      lng,
+      address: lat && lng ? `123 Main St, Near Lat ${lat.toFixed(2)}, Lng ${lng.toFixed(2)}` : undefined,
+      coordinate_confidence: confidence,
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -191,22 +240,84 @@ export const handlers = [
     return HttpResponse.json(newP)
   }),
 
-  http.patch(`${API_BASE_URL}/paathshaalas/:id`, async ({ request, params }) => {
+  // Also handle PUT (for updatePaathashaala which tries PUT first)
+  http.put(`${API_BASE_URL}/paathshaalas/:id`, async ({ request, params }) => {
     await delay(600)
-    const body = await request.json() as { name?: string, map_link?: string }
+    const body = await request.json() as { name?: string; map_link?: string; latitude?: number; longitude?: number }
     const index = PAATHSHAALAS.findIndex(p => p.id === params.id)
     if (index === -1) return new HttpResponse(null, { status: 404 })
 
     const p = PAATHSHAALAS[index]
-    const map_link = body.map_link ?? p.map_link ?? ''
-    const isFallback = !map_link.includes(',')
+    let lat = p.lat
+    let lng = p.lng
+    let confidence = p.coordinate_confidence
 
-    const updatedP = {
+    if (body.latitude != null && body.longitude != null) {
+      // Manual override — trust the admin-entered coords
+      lat = body.latitude
+      lng = body.longitude
+      confidence = 'manual'
+    } else if (body.map_link !== undefined) {
+      // Link updated — try to re-extract
+      const extracted = mockExtractCoords(body.map_link)
+      if (extracted) {
+        lat = extracted.lat
+        lng = extracted.lng
+        confidence = extracted.confidence
+      } else {
+        // Link failed: KEEP previous lat/lng, but mark confidence unresolved
+        confidence = 'unresolved'
+      }
+    }
+
+    const updatedP: Paathashaala = {
       ...p,
-      ...body,
-      lat: body.map_link ? (isFallback ? 40.0 : 40.7128) : p.lat,
-      lng: body.map_link ? (isFallback ? -73.0 : -74.0060) : p.lng,
-      coordinate_confidence: body.map_link ? (isFallback ? 'fallback' as const : 'parsed' as const) : p.coordinate_confidence,
+      name: body.name ?? p.name,
+      map_link: body.map_link ?? p.map_link,
+      lat,
+      lng,
+      address: lat && lng ? `123 Main St, Near Lat ${lat.toFixed(2)}, Lng ${lng.toFixed(2)}` : undefined,
+      coordinate_confidence: confidence,
+      updated_at: new Date().toISOString()
+    }
+    PAATHSHAALAS[index] = updatedP
+    return HttpResponse.json(updatedP)
+  }),
+
+  http.patch(`${API_BASE_URL}/paathshaalas/:id`, async ({ request, params }) => {
+    await delay(600)
+    const body = await request.json() as { name?: string; map_link?: string; latitude?: number; longitude?: number }
+    const index = PAATHSHAALAS.findIndex(p => p.id === params.id)
+    if (index === -1) return new HttpResponse(null, { status: 404 })
+
+    const p = PAATHSHAALAS[index]
+    let lat = p.lat
+    let lng = p.lng
+    let confidence = p.coordinate_confidence
+
+    if (body.latitude != null && body.longitude != null) {
+      lat = body.latitude
+      lng = body.longitude
+      confidence = 'manual'
+    } else if (body.map_link !== undefined) {
+      const extracted = mockExtractCoords(body.map_link)
+      if (extracted) {
+        lat = extracted.lat
+        lng = extracted.lng
+        confidence = extracted.confidence
+      } else {
+        confidence = 'unresolved'
+      }
+    }
+
+    const updatedP: Paathashaala = {
+      ...p,
+      name: body.name ?? p.name,
+      map_link: body.map_link ?? p.map_link,
+      lat,
+      lng,
+      address: lat && lng ? `123 Main St, Near Lat ${lat.toFixed(2)}, Lng ${lng.toFixed(2)}` : undefined,
+      coordinate_confidence: confidence,
       updated_at: new Date().toISOString()
     }
     PAATHSHAALAS[index] = updatedP
@@ -244,6 +355,13 @@ export const handlers = [
       page,
       limit
     })
+  }),
+
+  http.get(`${API_BASE_URL}/supervisors/:id`, async ({ params }) => {
+    await delay(300)
+    const s = SUPERVISORS.find(s => s.id === params.id)
+    if (!s) return new HttpResponse(null, { status: 404 })
+    return HttpResponse.json(s)
   }),
 
   http.post(`${API_BASE_URL}/supervisors`, async ({ request }) => {
@@ -324,6 +442,13 @@ export const handlers = [
       page,
       limit
     })
+  }),
+
+  http.get(`${API_BASE_URL}/teachers/:id`, async ({ params }) => {
+    await delay(300)
+    const t = TEACHERS.find(t => t.id === params.id)
+    if (!t) return new HttpResponse(null, { status: 404 })
+    return HttpResponse.json(t)
   }),
 
   http.post(`${API_BASE_URL}/teachers`, async ({ request }) => {
@@ -476,6 +601,35 @@ export const handlers = [
     return HttpResponse.json(response)
   }),
 
+  // POST /locations/request/:id
+  http.post(`${API_BASE_URL}/locations/request/:id`, async ({ params }) => {
+    await delay(300)
+    
+    // Simulate updating the user's location after a short delay
+    setTimeout(() => {
+      const sIdx = SUPERVISORS.findIndex(s => s.id === params.id)
+      if (sIdx !== -1) {
+        SUPERVISORS[sIdx] = { 
+          ...SUPERVISORS[sIdx], 
+          last_location_lat: (SUPERVISORS[sIdx].last_location_lat || 23.8) + Math.random() * 0.001,
+          last_location_lng: (SUPERVISORS[sIdx].last_location_lng || 86.4) + Math.random() * 0.001,
+          last_location_at: new Date().toISOString() 
+        }
+      }
+      const tIdx = TEACHERS.findIndex(t => t.id === params.id)
+      if (tIdx !== -1) {
+        TEACHERS[tIdx] = { 
+          ...TEACHERS[tIdx],
+          last_location_lat: (TEACHERS[tIdx].last_location_lat || 40.7) + Math.random() * 0.001,
+          last_location_lng: (TEACHERS[tIdx].last_location_lng || -74.0) + Math.random() * 0.001,
+          last_location_at: new Date().toISOString() 
+        }
+      }
+    }, 8000) // update after 8s so the UI has time to poll and wait
+
+    return HttpResponse.json({ success: true })
+  }),
+
   // Distance Lookup — TODO [3f]: GET /api/admin/locations/distance?user_id=X&paathashaala_id=Y
   http.get(`${API_BASE_URL}/locations/distance`, async ({ request }) => {
     await delay(300)
@@ -492,9 +646,11 @@ export const handlers = [
       return new HttpResponse(null, { status: 404 })
     }
 
-    // If user is offline (no coords), return a large distance
-    const dist = (user.last_lat != null && user.last_lng != null)
-      ? haversine(user.last_lat, user.last_lng, paathshaala.lat, paathshaala.lng)
+    // If user is offline (no coords) or paathshaala has no coords, return a large distance
+    const pLat = paathshaala.lat ?? paathshaala.latitude
+    const pLng = paathshaala.lng ?? paathshaala.longitude
+    const dist = (user.last_lat != null && user.last_lng != null && pLat != null && pLng != null)
+      ? haversine(user.last_lat, user.last_lng, pLat, pLng)
       : 99999
 
     const result: DistanceLookupResponse = {
@@ -506,6 +662,28 @@ export const handlers = [
 
     return HttpResponse.json(result)
   }),
+
+  // Reverse Geocoding
+  http.get(`${API_BASE_URL}/geocode/reverse`, async ({ request }) => {
+    await delay(600)
+    const url = new URL(request.url)
+    const lat = url.searchParams.get('lat')
+    const lng = url.searchParams.get('lng')
+    
+    if (!lat || !lng) {
+      return new HttpResponse(null, { status: 400 })
+    }
+
+    // Simulate failure occasionally or specifically
+    if (lat === '0' || lng === '0') {
+      return new HttpResponse(null, { status: 404 })
+    }
+
+    return HttpResponse.json({
+      address: `123 Main St, Near Lat ${parseFloat(lat).toFixed(2)}, Lng ${parseFloat(lng).toFixed(2)}, City, State, 12345`
+    })
+  }),
+
 
   // Export — returns a mocked CSV blob response
   http.post(`${API_BASE_URL}/export`, async ({ request }) => {

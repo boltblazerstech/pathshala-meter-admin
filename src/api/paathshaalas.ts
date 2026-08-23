@@ -41,11 +41,13 @@ export async function getPaathashaala(id: string): Promise<Paathashaala> {
 
 // POST /paathshaalas
 export async function createPaathashaala(payload: CreatePaathashaalaRequest): Promise<Paathashaala> {
-  const body = {
-    name: payload.name,
-    map_link: payload.map_link,
-    source_map_link: payload.map_link,
+  const body: Record<string, any> = { name: payload.name }
+  if (payload.map_link) {
+    body.map_link = payload.map_link
+    body.source_map_link = payload.map_link
   }
+  if (payload.latitude != null) body.latitude = payload.latitude
+  if (payload.longitude != null) body.longitude = payload.longitude
   const { data } = await apiClient.post<Paathashaala>('/paathshaalas', body)
   return data
 }
@@ -61,6 +63,8 @@ export async function updatePaathashaala(
     body.map_link = payload.map_link
     body.source_map_link = payload.map_link
   }
+  if (payload.latitude != null) body.latitude = payload.latitude
+  if (payload.longitude != null) body.longitude = payload.longitude
 
   try {
     const { data } = await apiClient.put<Paathashaala>(`/paathshaalas/${id}`, body)

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getLiveSync, getDistanceLookup } from '../../api/locations'
 import { listPaathshaalas } from '../../api/paathshaalas'
+import { AddressReveal } from '../../components/AddressReveal'
 import type { LiveSyncStatus, DistanceLookupResponse } from '../../types'
 
 /** Refetch every 30 seconds — swap to WebSocket/SSE once real backend is live */
@@ -97,7 +98,7 @@ function SupervisorRow({ user }: { user: LiveSyncStatus }) {
       </td>
       <td className="px-4 py-3">
         <select
-          className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full"
           value={selectedPaathashaalaId ?? ''}
           onChange={(e) => setSelectedPaathashaalaId(e.target.value || null)}
         >
@@ -106,6 +107,18 @@ function SupervisorRow({ user }: { user: LiveSyncStatus }) {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-900">
+        {user.last_lat != null && user.last_lng != null ? (
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-xs">{user.last_lat.toFixed(4)}, {user.last_lng.toFixed(4)}</span>
+              <AddressReveal lat={user.last_lat} lng={user.last_lng} />
+            </div>
+          </div>
+        ) : (
+          <span className="text-gray-400 italic text-xs">Unknown</span>
+        )}
       </td>
       <td className="px-4 py-3">
         <DistanceDisplay result={result} isLoading={loading} />
@@ -133,6 +146,18 @@ function TeacherRow({ user }: { user: LiveSyncStatus }) {
       </td>
       <td className="px-4 py-3 text-sm text-gray-600">
         {user.assigned_paathshaala_name}
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-900">
+        {user.last_lat != null && user.last_lng != null ? (
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-xs">{user.last_lat.toFixed(4)}, {user.last_lng.toFixed(4)}</span>
+              <AddressReveal lat={user.last_lat} lng={user.last_lng} />
+            </div>
+          </div>
+        ) : (
+          <span className="text-gray-400 italic text-xs">Unknown</span>
+        )}
       </td>
       <td className="px-4 py-3">
         <DistanceDisplay result={result} isLoading={loading} />
@@ -196,6 +221,7 @@ export function LiveViewPage() {
                 <th className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wide">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wide">Last Synced (IST)</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wide">Paathashaala</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wide">Coordinates</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wide">Distance</th>
               </tr>
             </thead>

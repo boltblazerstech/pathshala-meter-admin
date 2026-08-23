@@ -35,14 +35,20 @@ export interface AdminUser {
 }
 
 // ── Paathshaalas ─────────────────────────────────────────────────────────────
+export type CoordinateConfidence = 'parsed' | 'fallback' | 'manual' | 'unresolved' | 'HIGH' | 'LOW' | string
+
 export interface Paathashaala {
   id: string
   name: string
   map_link?: string
   source_map_link?: string
-  lat: number
-  lng: number
-  coordinate_confidence?: 'parsed' | 'fallback' | 'HIGH' | 'LOW' | string
+  // Backend may return lat/lng or latitude/longitude — accept both
+  lat?: number | null
+  lng?: number | null
+  latitude?: number | null
+  longitude?: number | null
+  address?: string
+  coordinate_confidence?: CoordinateConfidence
   active?: boolean
   is_active?: boolean
   created_at?: string
@@ -51,7 +57,9 @@ export interface Paathashaala {
 
 export interface CreatePaathashaalaRequest {
   name: string
-  map_link: string
+  map_link?: string
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export type UpdatePaathashaalaRequest = Partial<CreatePaathashaalaRequest>
@@ -64,6 +72,9 @@ export interface Supervisor {
   phone_number?: string
   active?: boolean
   is_active?: boolean
+  last_location_lat?: number | null
+  last_location_lng?: number | null
+  last_location_at?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -91,6 +102,9 @@ export interface Teacher {
   paathashaala_name?: string
   active?: boolean
   is_active?: boolean
+  last_location_lat?: number | null
+  last_location_lng?: number | null
+  last_location_at?: string | null
   created_at?: string
   updated_at?: string
 }

@@ -63,11 +63,15 @@ export function PaathashaalaListPage() {
     {
       key: 'coords',
       header: 'Coordinates',
-      render: (row) => (
-        <span className="font-mono text-xs text-gray-600">
-          {typeof row.lat === 'number' ? row.lat.toFixed(4) : '—'}, {typeof row.lng === 'number' ? row.lng.toFixed(4) : '—'}
-        </span>
-      ),
+      render: (row) => {
+        const lat = row.lat ?? row.latitude
+        const lng = row.lng ?? row.longitude
+        return (
+          <span className="font-mono text-xs text-gray-600">
+            {typeof lat === 'number' ? lat.toFixed(4) : '—'}, {typeof lng === 'number' ? lng.toFixed(4) : '—'}
+          </span>
+        )
+      },
     },
     {
       key: 'coordinate_confidence',
@@ -76,17 +80,32 @@ export function PaathashaalaListPage() {
         const conf = (row.coordinate_confidence || '').toLowerCase()
         if (conf === 'parsed' || conf === 'high') {
           return (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-              Parsed
+            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700" title="Coordinates parsed directly from link">
+              ✓ Parsed
             </span>
           )
         }
+        if (conf === 'manual') {
+          return (
+            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700" title="Coordinates entered manually by admin">
+              ✎ Manual
+            </span>
+          )
+        }
+        if (conf === 'unresolved') {
+          return (
+            <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 cursor-help" title="Link couldn't be resolved — coordinates may be stale. Please verify.">
+              ⚠ Unresolved
+            </span>
+          )
+        }
+        // fallback / LOW / anything else
         return (
-          <span 
+          <span
             className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 cursor-help"
-            title="Coordinates derived from a fallback search. May be inaccurate."
+            title="Coordinates derived from a fallback text search. May be inaccurate."
           >
-            Fallback
+            ~ Fallback
           </span>
         )
       },
