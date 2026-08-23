@@ -6,6 +6,7 @@ import { LoginPage } from './features/auth/LoginPage'
 import { PaathashaalaListPage } from './features/paathshaalas/PaathashaalaListPage'
 import { SupervisorListPage } from './features/supervisors/SupervisorListPage'
 import { TeacherListPage } from './features/teachers/TeacherListPage'
+import { UserDetailPage } from './features/users/UserDetailPage'
 import { TrackingWindowListPage } from './features/trackingWindows/TrackingWindowListPage'
 import { LiveViewPage } from './features/liveView/LiveViewPage'
 import { ExportPage } from './features/export/ExportPage'
@@ -22,7 +23,9 @@ export default function App() {
           <Route index element={<Navigate to="/paathshaalas" replace />} />
           <Route path="paathshaalas"      element={<PaathashaalaListPage />} />
           <Route path="supervisors"       element={<SupervisorListPage />} />
+          <Route path="supervisors/:id/detail" element={<UserDetailPage role="supervisor" />} />
           <Route path="teachers"          element={<TeacherListPage />} />
+          <Route path="teachers/:id/detail" element={<UserDetailPage role="teacher" />} />
           <Route path="tracking-windows"  element={<TrackingWindowListPage />} />
           <Route path="live-view"         element={<LiveViewPage />} />
           <Route path="export"            element={<ExportPage />} />

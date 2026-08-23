@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listSupervisors, updateSupervisor, deleteSupervisor } from '../../api/supervisors'
 import { Table, type Column } from '../../components/Table'
@@ -9,6 +10,38 @@ import { toast } from '../../lib/toast'
 import type { Supervisor } from '../../types'
 
 import { AddressRevealProvider, useAddressRevealContext } from '../../contexts/AddressRevealContext'
+import { formatDistance } from '../../lib/format'
+import { listPaathshaalas } from '../../api/paathshaalas'
+import { updateSupervisorSelectedPaathshaala } from '../../api/supervisors'
+
+function SupervisorPaathshaalaCell({ supervisor, paathshaalas }: { supervisor: Supervisor, paathshaalas: any[] }) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: (pid: string) => updateSupervisorSelectedPaathshaala(supervisor.id, pid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supervisors'] })
+      toast.success('Paathshaala assigned')
+    },
+    onError: () => toast.error('Failed to assign paathshaala')
+  })
+
+  return (
+    <select
+      value={supervisor.selected_paathshaala_id || ''}
+      onClick={(e) => e.stopPropagation()} // prevent row click navigation
+      onChange={(e) => {
+        mutation.mutate(e.target.value)
+      }}
+      disabled={mutation.isPending}
+      className="text-sm border-gray-300 rounded-md py-1 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 min-w-[140px]"
+    >
+      <option value="">Select paathshaala...</option>
+      {paathshaalas.map(p => (
+        <option key={p.id} value={p.id}>{p.name}</option>
+      ))}
+    </select>
+  )
+}
 
 export function SupervisorListPage() {
   return (
@@ -21,6 +54,7 @@ export function SupervisorListPage() {
 function SupervisorListContent() {
   const queryClient = useQueryClient()
   const revealContext = useAddressRevealContext()
+  const navigate = useNavigate()
   
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -41,6 +75,12 @@ function SupervisorListContent() {
   const { data, isLoading } = useQuery({
     queryKey: ['supervisors', page, debouncedSearch],
     queryFn: () => listSupervisors({ limit: 10, page, search: debouncedSearch }),
+  })
+
+  const { data: paathshaalasData } = useQuery({
+    queryKey: ['paathshaalas', 'dropdown'],
+    queryFn: () => listPaathshaalas({ limit: 1000, is_active: true }),
+    staleTime: 60_000,
   })
 
   // We use DELETE for deactivation to match the "soft-delete" spec
@@ -101,6 +141,21 @@ function SupervisorListContent() {
       key: 'location',
       header: 'Last Location',
       render: (row) => <LocationCell user={row} type="supervisor" />
+    },
+    {
+      key: 'paathshaala',
+      header: 'Paathshaala',
+      render: (row) => (
+        <SupervisorPaathshaalaCell 
+          supervisor={row} 
+          paathshaalas={paathshaalasData?.content ?? paathshaalasData?.data ?? []} 
+        />
+      )
+    },
+    {
+      key: 'distance',
+      header: 'Latest Distance',
+      render: (row) => formatDistance(row.latest_distance_meters)
     },
     {
       key: 'actions',
@@ -177,6 +232,7 @@ function SupervisorListContent() {
         keyField="id"
         isLoading={isLoading}
         emptyMessage="No supervisors found."
+        onRowClick={(row) => navigate(`/supervisors/${row.id}/detail`)}
       />
 
       {/* Pagination Controls */}

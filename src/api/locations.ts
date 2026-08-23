@@ -28,3 +28,14 @@ export async function getDistanceLookup(
 export async function requestLocationUpdate(userId: string): Promise<void> {
   await apiClient.post(`/locations/request/${userId}`)
 }
+
+export async function getUserLocationDetail(
+  userId: string,
+  date: string,
+  paathshaalaId?: string | null
+) {
+  const { data } = await apiClient.get<import('../types').UserLocationDetailResponse>(`/users/${userId}/locations/detail`, {
+    params: { date, paathshaala_id: paathshaalaId || undefined }
+  })
+  return data
+}

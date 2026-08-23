@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listTeachers, updateTeacher, deleteTeacher } from '../../api/teachers'
 import { Table, type Column } from '../../components/Table'
@@ -8,6 +9,7 @@ import { TeacherModal } from './TeacherModal'
 import { toast } from '../../lib/toast'
 import type { Teacher } from '../../types'
 import { AddressRevealProvider, useAddressRevealContext } from '../../contexts/AddressRevealContext'
+import { formatDistance } from '../../lib/format'
 
 export function TeacherListPage() {
   return (
@@ -20,6 +22,7 @@ export function TeacherListPage() {
 function TeacherListContent() {
   const queryClient = useQueryClient()
   const revealContext = useAddressRevealContext()
+  const navigate = useNavigate()
   
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -102,9 +105,14 @@ function TeacherListContent() {
       },
     },
     {
-      key: 'location',
+      key: 'last_location',
       header: 'Last Location',
       render: (row) => <LocationCell user={row} type="teacher" />
+    },
+    {
+      key: 'distance',
+      header: 'Latest Distance',
+      render: (row) => formatDistance(row.latest_distance_meters)
     },
     {
       key: 'actions',
@@ -181,6 +189,7 @@ function TeacherListContent() {
         keyField="id"
         isLoading={isLoading}
         emptyMessage="No teachers found."
+        onRowClick={(row) => navigate(`/teachers/${row.id}/detail`)}
       />
 
       {/* Pagination Controls */}

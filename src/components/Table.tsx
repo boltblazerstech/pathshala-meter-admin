@@ -13,6 +13,7 @@ interface TableProps<T> {
   keyField: keyof T
   isLoading?: boolean
   emptyMessage?: string
+  onRowClick?: (row: T) => void
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,6 +23,7 @@ export function Table<T extends Record<string, any>>({
   keyField,
   isLoading = false,
   emptyMessage = 'No records found.',
+  onRowClick,
 }: TableProps<T>) {
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -54,7 +56,19 @@ export function Table<T extends Record<string, any>>({
               </tr>
             ) : (
               data.map((row) => (
-                <tr key={String(row[keyField as string])} className="hover:bg-gray-50 transition-colors">
+                <tr 
+                  key={String(row[keyField as string])} 
+                  className={`transition-colors ${onRowClick ? 'hover:bg-gray-50 cursor-pointer' : 'hover:bg-gray-50'}`}
+                  onClick={(e) => {
+                    if (!onRowClick) return
+                    // Ignore clicks on buttons, links, inputs, and selects
+                    const target = e.target as HTMLElement
+                    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('select')) {
+                      return
+                    }
+                    onRowClick(row)
+                  }}
+                >
                   {columns.map((col) => (
                     <td key={String(col.key)} className={`px-4 py-3 ${col.className ?? ''}`}>
                       {col.render

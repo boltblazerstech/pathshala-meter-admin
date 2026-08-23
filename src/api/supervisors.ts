@@ -80,6 +80,17 @@ export async function updateSupervisor(
   }
 }
 
+// PATCH /api/admin/supervisors/{id}/selected-paathshaala
+export async function updateSupervisorSelectedPaathshaala(
+  id: string,
+  paathshaalaId: string | null
+): Promise<Supervisor> {
+  const { data } = await apiClient.patch<Supervisor>(`/supervisors/${id}/selected-paathshaala`, {
+    paathshaala_id: paathshaalaId
+  })
+  return data
+}
+
 // DELETE /supervisors/:id
 export async function deleteSupervisor(id: string): Promise<void> {
   await apiClient.delete(`/supervisors/${id}`)

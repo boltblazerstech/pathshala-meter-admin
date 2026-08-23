@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getLiveSync, getDistanceLookup } from '../../api/locations'
 import { listPaathshaalas } from '../../api/paathshaalas'
 import { AddressReveal } from '../../components/AddressReveal'
+import { formatDistance } from '../../lib/format'
 import type { LiveSyncStatus, DistanceLookupResponse } from '../../types'
 
 /** Refetch every 30 seconds — swap to WebSocket/SSE once real backend is live */
@@ -32,8 +33,7 @@ function DistanceDisplay({ result, isLoading }: { result: DistanceLookupResponse
   if (!result) {
     return <span className="text-xs text-gray-400">—</span>
   }
-  const meters = result.distance_meters
-  const label = meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${meters} m`
+  const label = formatDistance(result.distance_meters)
 
   if (result.is_within_range) {
     return (

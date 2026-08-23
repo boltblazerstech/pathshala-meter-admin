@@ -663,6 +663,82 @@ export const handlers = [
     return HttpResponse.json(result)
   }),
 
+  // Location Detail
+  http.get(`${API_BASE_URL}/users/:id/locations/detail`, async ({ request, params }) => {
+    await delay(500)
+    const url = new URL(request.url)
+    const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const paathshaalaId = url.searchParams.get('paathshaala_id')
+    const userId = params.id as string
+
+    // Find user to know role and name
+    let role: 'supervisor' | 'teacher' = 'supervisor'
+    let user_name = 'Unknown User'
+    let assigned_paathshaala_id: string | undefined = undefined
+    let paathshaala_name: string | undefined = undefined
+
+    const sup = SUPERVISORS.find(s => s.id === userId)
+    if (sup) {
+      user_name = sup.name
+      role = 'supervisor'
+    } else {
+      const teach = TEACHERS.find(t => t.id === userId)
+      if (teach) {
+        user_name = teach.name
+        role = 'teacher'
+        assigned_paathshaala_id = (teach as any).paathashaala_id || teach.paathshaala_id || undefined
+        paathshaala_name = (teach as any).paathashaala_name || teach.paathshaala_name || undefined
+      }
+    }
+
+    // Generate random points for the given date
+    const targetPaathshaalaId = role === 'teacher' ? assigned_paathshaala_id : paathshaalaId
+    const targetPaathshaala = PAATHSHAALAS.find(p => p.id === targetPaathshaalaId)
+    
+    // Create ~10 mock locations
+    const locations = Array.from({ length: Math.floor(Math.random() * 5) + 3 }).map((_, i) => {
+      // Mock random lat/lng close to paathshaala if provided, or random fallback
+      let lat = 23.8 + (Math.random() * 0.05)
+      let lng = 86.4 + (Math.random() * 0.05)
+      let distance_meters: number | null = null
+
+      if (targetPaathshaala) {
+        const pLat = targetPaathshaala.lat ?? targetPaathshaala.latitude
+        const pLng = targetPaathshaala.lng ?? targetPaathshaala.longitude
+        if (pLat != null && pLng != null) {
+          // add small random offset
+          lat = pLat + (Math.random() * 0.01 - 0.005)
+          lng = pLng + (Math.random() * 0.01 - 0.005)
+          distance_meters = Math.round(haversine(lat, lng, pLat, pLng))
+        }
+      }
+
+      // Random hours
+      const hour = 8 + i
+      const captured_at = `${hour.toString().padStart(2, '0')}:15:00`
+      const received_at = `${hour.toString().padStart(2, '0')}:16:30`
+
+      return {
+        id: `loc_${i}`,
+        captured_at,
+        received_at,
+        lat,
+        lng,
+        distance_meters,
+      }
+    }).sort((a, b) => b.captured_at.localeCompare(a.captured_at)) // desc order
+
+    return HttpResponse.json({
+      user_id: userId,
+      user_name,
+      user_role: role,
+      date,
+      paathshaala_id: assigned_paathshaala_id || null,
+      paathshaala_name: paathshaala_name || null,
+      points: date === '1970-01-01' ? [] : locations // way to test empty state
+    })
+  }),
+
   // Reverse Geocoding
   http.get(`${API_BASE_URL}/geocode/reverse`, async ({ request }) => {
     await delay(600)

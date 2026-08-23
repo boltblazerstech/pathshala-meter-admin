@@ -75,6 +75,9 @@ export interface Supervisor {
   last_location_lat?: number | null
   last_location_lng?: number | null
   last_location_at?: string | null
+  selected_paathshaala_id?: string | null
+  selected_paathshaala_name?: string | null
+  latest_distance_meters?: number | null
   created_at?: string
   updated_at?: string
 }
@@ -105,6 +108,7 @@ export interface Teacher {
   last_location_lat?: number | null
   last_location_lng?: number | null
   last_location_at?: string | null
+  latest_distance_meters?: number | null
   created_at?: string
   updated_at?: string
 }
@@ -175,6 +179,26 @@ export interface DistanceLookupResponse {
   paathashaala_id: string
   distance_meters: number
   is_within_range: boolean
+}
+
+// ── Location Detail (Single User/Date) ───────────────────────────────────────
+export interface UserLocationPoint {
+  id: string
+  captured_at: string
+  received_at: string
+  lat: number
+  lng: number
+  distance_meters: number | null
+}
+
+export interface UserLocationDetailResponse {
+  user_id: string
+  user_name: string
+  user_role: 'supervisor' | 'teacher'
+  date: string
+  paathshaala_id?: string | null
+  paathshaala_name?: string | null
+  points: UserLocationPoint[]
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
