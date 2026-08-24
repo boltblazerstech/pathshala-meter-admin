@@ -130,6 +130,11 @@ function SupervisorListContent() {
       render: (row) => row.phone_number || row.phone || '—',
     },
     {
+      key: 'password',
+      header: 'Password',
+      render: (row) => row.password ? <span className="font-mono text-gray-700">{row.password}</span> : <span className="text-gray-400">—</span>,
+    },
+    {
       key: 'is_active',
       header: 'Status',
       render: (row) => {

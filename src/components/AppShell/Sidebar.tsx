@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { to: '/supervisors',       label: 'Supervisors'   },
   { to: '/teachers',          label: 'Teachers'      },
   { to: '/tracking-windows',  label: 'Tracking Windows' },
-  { to: '/live-view',         label: 'Live View'     },
+  // { to: '/live-view',         label: 'Live View'     },
   { to: '/export',            label: 'Export'        },
 ]
 

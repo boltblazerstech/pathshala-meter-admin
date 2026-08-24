@@ -70,6 +70,7 @@ export interface Supervisor {
   name: string
   phone?: string
   phone_number?: string
+  password?: string
   active?: boolean
   is_active?: boolean
   last_location_lat?: number | null
@@ -86,6 +87,7 @@ export interface CreateSupervisorRequest {
   name: string
   phone?: string
   phone_number?: string
+  password?: string
 }
 
 export type UpdateSupervisorRequest = Partial<CreateSupervisorRequest> & {
@@ -99,6 +101,7 @@ export interface Teacher {
   name: string
   phone?: string
   phone_number?: string
+  password?: string
   paathshaala_id?: string
   assigned_paathshaala_id?: string
   paathshaala_name?: string
@@ -117,6 +120,7 @@ export interface CreateTeacherRequest {
   name: string
   phone?: string
   phone_number?: string
+  password?: string
   paathshaala_id?: string
   assigned_paathshaala_id?: string
 }

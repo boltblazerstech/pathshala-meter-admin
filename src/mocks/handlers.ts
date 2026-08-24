@@ -366,17 +366,20 @@ export const handlers = [
 
   http.post(`${API_BASE_URL}/supervisors`, async ({ request }) => {
     await delay(600)
-    const body = await request.json() as { name: string, phone: string }
+    const body = await request.json() as { name: string, phone: string, password?: string }
     
     // Check uniqueness
     if (SUPERVISORS.some(s => s.phone === body.phone)) {
       return HttpResponse.json({ message: "Phone number is already in use." }, { status: 409 })
     }
 
+    const password = body.password || Math.floor(100000 + Math.random() * 900000).toString()
+
     const newS: Supervisor = {
       id: `s${Date.now()}`,
       name: body.name,
       phone: body.phone,
+      password: password,
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -387,7 +390,7 @@ export const handlers = [
 
   http.patch(`${API_BASE_URL}/supervisors/:id`, async ({ request, params }) => {
     await delay(600)
-    const body = await request.json() as { name?: string, phone?: string, is_active?: boolean }
+    const body = await request.json() as { name?: string, phone?: string, is_active?: boolean, password?: string }
     const index = SUPERVISORS.findIndex(s => s.id === params.id)
     if (index === -1) return new HttpResponse(null, { status: 404 })
 
@@ -453,7 +456,7 @@ export const handlers = [
 
   http.post(`${API_BASE_URL}/teachers`, async ({ request }) => {
     await delay(600)
-    const body = await request.json() as { name: string, phone: string, assigned_paathshaala_id: string }
+    const body = await request.json() as { name: string, phone: string, assigned_paathshaala_id: string, password?: string }
     
     // Check uniqueness
     if (TEACHERS.some(t => t.phone === body.phone)) {
@@ -465,10 +468,13 @@ export const handlers = [
       return HttpResponse.json({ message: "Invalid paathshaala ID" }, { status: 400 })
     }
 
+    const password = body.password || Math.floor(100000 + Math.random() * 900000).toString()
+
     const newT: Teacher = {
       id: `t${Date.now()}`,
       name: body.name,
       phone: body.phone,
+      password: password,
       assigned_paathshaala_id: body.assigned_paathshaala_id,
       paathashaala_name: paathshaala.name,
       is_active: true,
@@ -481,7 +487,7 @@ export const handlers = [
 
   http.patch(`${API_BASE_URL}/teachers/:id`, async ({ request, params }) => {
     await delay(600)
-    const body = await request.json() as { name?: string, phone?: string, assigned_paathshaala_id?: string, is_active?: boolean }
+    const body = await request.json() as { name?: string, phone?: string, assigned_paathshaala_id?: string, is_active?: boolean, password?: string }
     const index = TEACHERS.findIndex(t => t.id === params.id)
     if (index === -1) return new HttpResponse(null, { status: 404 })
 

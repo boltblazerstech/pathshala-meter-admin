@@ -27,15 +27,21 @@ export function SupervisorModal({ isOpen, onClose, supervisor }: SupervisorModal
         setForm({
           name: supervisor.name,
           phone_number: supervisor.phone_number || supervisor.phone || '',
+          password: supervisor.password || '',
         })
       } else {
-        setForm({ name: '', phone_number: '' })
+        setForm({ name: '', phone_number: '', password: '' })
       }
     }
   }, [isOpen, supervisor])
 
-  const onSuccess = () => {
-    toast.success(supervisor ? 'Supervisor updated' : 'Supervisor added')
+  const onSuccess = (data: Supervisor) => {
+    if (!isEditing && data.password) {
+      window.alert(`User created.\n\nPassword: ${data.password}\n\nShare this with them.`)
+      toast.success('Supervisor added')
+    } else {
+      toast.success(supervisor ? 'Supervisor updated' : 'Supervisor added')
+    }
     queryClient.invalidateQueries({ queryKey: ['supervisors'] })
     onClose()
   }
@@ -97,6 +103,14 @@ export function SupervisorModal({ isOpen, onClose, supervisor }: SupervisorModal
           hint="Must be unique. Used for login/identification."
           value={form.phone_number ?? ''}
           onChange={(e) => setForm((f) => ({ ...f, phone_number: e.target.value, phone: e.target.value }))}
+        />
+        <FormField
+          id="password"
+          label="Password"
+          type="text"
+          hint={isEditing ? "Update user's password directly." : "Leave blank to auto-generate a 6-digit PIN."}
+          value={form.password ?? ''}
+          onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
         />
 
         <div className="mt-6 flex justify-end space-x-3">

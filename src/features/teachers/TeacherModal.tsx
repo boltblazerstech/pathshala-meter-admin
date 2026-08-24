@@ -41,16 +41,22 @@ export function TeacherModal({ isOpen, onClose, teacher }: TeacherModalProps) {
         setForm({ 
           name: teacher.name, 
           phone_number: teacher.phone_number || teacher.phone || '',
-          paathshaala_id: teacher.paathshaala_id || teacher.assigned_paathshaala_id || ''
+          paathshaala_id: teacher.paathshaala_id || teacher.assigned_paathshaala_id || '',
+          password: teacher.password || ''
         })
       } else {
-        setForm({ name: '', phone_number: '', paathshaala_id: '' })
+        setForm({ name: '', phone_number: '', paathshaala_id: '', password: '' })
       }
     }
   }, [isOpen, teacher])
 
-  const onSuccess = () => {
-    toast.success(teacher ? 'Teacher updated' : 'Teacher added')
+  const onSuccess = (data: Teacher) => {
+    if (!isEditing && data.password) {
+      window.alert(`User created.\n\nPassword: ${data.password}\n\nShare this with them.`)
+      toast.success('Teacher added')
+    } else {
+      toast.success(teacher ? 'Teacher updated' : 'Teacher added')
+    }
     queryClient.invalidateQueries({ queryKey: ['teachers'] })
     onClose()
   }
@@ -130,6 +136,15 @@ export function TeacherModal({ isOpen, onClose, teacher }: TeacherModalProps) {
             </option>
           ))}
         </FormField>
+
+        <FormField
+          id="password"
+          label="Password"
+          type="text"
+          hint={isEditing ? "Update user's password directly." : "Leave blank to auto-generate a 6-digit PIN."}
+          value={form.password ?? ''}
+          onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+        />
 
         <div className="mt-6 flex justify-end space-x-3">
           <button
