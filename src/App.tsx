@@ -10,6 +10,7 @@ import { UserDetailPage } from './features/users/UserDetailPage'
 import { TrackingWindowListPage } from './features/trackingWindows/TrackingWindowListPage'
 import { LiveViewPage } from './features/liveView/LiveViewPage'
 import { ExportPage } from './features/export/ExportPage'
+import { SettingsPage } from './features/settings/SettingsPage'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="tracking-windows"  element={<TrackingWindowListPage />} />
           <Route path="live-view"         element={<LiveViewPage />} />
           <Route path="export"            element={<ExportPage />} />
+          <Route path="settings"          element={<SettingsPage />} />
         </Route>
       </Route>
 

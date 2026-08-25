@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/tracking-windows',  label: 'Tracking Windows' },
   // { to: '/live-view',         label: 'Live View'     },
   { to: '/export',            label: 'Export'        },
+  { to: '/settings',          label: 'Settings'      },
 ]
 
 export function Sidebar() {

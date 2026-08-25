@@ -10,6 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   'tracking-windows':'Tracking Windows',
   'live-view':       'Live View',
   export:            'Export',
+  settings:          'Settings',
   dashboard:         'Dashboard',
 }
 

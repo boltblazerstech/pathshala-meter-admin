@@ -13,6 +13,7 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.placeholder.local/api'
 
 // ── Mock Data Generators ──────────────────────────────────────────────────────
+let HEALING_INTERVAL = 30
 
 let PAATHSHAALAS: Paathashaala[] = [
   {
@@ -163,6 +164,21 @@ export const handlers = [
       access_token: 'mock-access-token',
       user: { id: 'u1', name: 'Admin User', email: 'admin@example.com', role: 'admin' }
     })
+  }),
+
+  // System Config
+  http.get(`${API_BASE_URL}/system-config/healing-interval`, async () => {
+    await delay(300)
+    return HttpResponse.json(HEALING_INTERVAL)
+  }),
+
+  http.put(`${API_BASE_URL}/system-config/healing-interval`, async ({ request }) => {
+    await delay(300)
+    const val = await request.json()
+    if (typeof val === 'number') {
+      HEALING_INTERVAL = val
+    }
+    return HttpResponse.json({ success: true })
   }),
 
   http.get(`${API_BASE_URL}/auth/me`, async () => {
