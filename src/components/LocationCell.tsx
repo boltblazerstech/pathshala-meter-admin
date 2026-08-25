@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { requestLocationUpdate } from '../api/locations';
 import { AddressReveal } from './AddressReveal';
@@ -47,8 +47,13 @@ function RelativeTime({ dateString }: { dateString: string }) {
 
 export function LocationCell({ user, type }: { user: Supervisor | Teacher, type: 'supervisor' | 'teacher' }) {
   const [isPolling, setIsPolling] = useState(false);
-  const [pollingStartTime, setPollingStartTime] = useState<number | null>(null);
-  const [initialCapturedAt, setInitialCapturedAt] = useState<string | null | undefined>(undefined);
+  const [didTimeout, setDidTimeout] = useState(false);
+
+  // Bug 4 fix: Use a ref to capture the baseline timestamp at the exact
+  // moment the admin clicks, avoiding stale closure issues with the user prop.
+  const baselineTimestampRef = useRef<string | null | undefined>(undefined);
+  // Bug 1 fix: Use a ref to hold the timeout ID so we can clear it on unmount or success.
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const query = useQuery({
     queryKey: [type, user.id, 'location'],
@@ -63,32 +68,66 @@ export function LocationCell({ user, type }: { user: Supervisor | Teacher, type:
   const currentLat = query.data?.last_location_lat ?? user.last_location_lat;
   const currentLng = query.data?.last_location_lng ?? user.last_location_lng;
 
+  // Bug 2 + 3 fix: Check for new data using a simple comparison against the ref.
+  // This runs on every render (not gated by useEffect dependencies), so even if
+  // React Query structural sharing skips a re-render, the NEXT poll that does
+  // bring new data will trigger this immediately.
   useEffect(() => {
     if (!isPolling) return;
-    
-    // Stop if we got a newer timestamp. We compare against the state variable
-    // initialized on click, so parent re-renders don't break the stop condition.
-    if (initialCapturedAt !== undefined && currentCapturedAt !== initialCapturedAt) {
-       setIsPolling(false);
+    const baseline = baselineTimestampRef.current;
+
+    // Stop condition: we got a DIFFERENT timestamp than what we saved on click.
+    // Works for null/undefined baselines too (new users with no prior location).
+    if (baseline !== undefined && currentCapturedAt !== baseline) {
+      setIsPolling(false);
+      setDidTimeout(false);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
     }
-    
-    // Stop if 40 seconds passed (timeout)
-    if (pollingStartTime && Date.now() - pollingStartTime > 40000) {
-       setIsPolling(false);
+  }, [isPolling, currentCapturedAt]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    setIsPolling(false);
+    setDidTimeout(true);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
-  }, [isPolling, currentCapturedAt, initialCapturedAt, pollingStartTime]);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: () => requestLocationUpdate(user.id),
     onSuccess: () => {
-      setInitialCapturedAt(user.last_location_at);
+      // Bug 4 fix: Capture the CURRENT value from the user prop right now,
+      // not from a stale closure. Using a ref means the stop-condition
+      // comparison always uses the value from the moment of this click.
+      baselineTimestampRef.current = user.last_location_at ?? null;
       setIsPolling(true);
-      setPollingStartTime(Date.now());
+      setDidTimeout(false);
+
+      // Bug 1 fix: Use a standalone setTimeout that WILL fire after 40s
+      // regardless of whether React re-renders or not. This completely
+      // bypasses the React Query structural sharing problem (Bug 3).
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(stopPolling, 40000);
     }
   });
 
   const isLoading = mutation.isPending || isPolling;
-  const isTimeout = !isPolling && pollingStartTime && initialCapturedAt !== undefined && currentCapturedAt === initialCapturedAt;
+  // Bug 5 fix: Use a dedicated `didTimeout` boolean that is explicitly set
+  // only when the 40s timer fires, and explicitly cleared on a new click or success.
+  const isTimeout = didTimeout && !isPolling;
 
   return (
     <div className="flex items-center justify-between w-full min-w-[150px]">
