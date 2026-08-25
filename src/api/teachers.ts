@@ -44,13 +44,15 @@ export async function getTeacher(id: string): Promise<Teacher> {
 // POST /teachers
 export async function createTeacher(payload: CreateTeacherRequest): Promise<Teacher> {
   const paathshaalaId = payload.paathshaala_id || payload.assigned_paathshaala_id
-  const body = {
+  const body: Record<string, any> = {
     name: payload.name,
     phone_number: payload.phone_number || payload.phone,
     phone: payload.phone || payload.phone_number,
     paathshaala_id: paathshaalaId,
     assigned_paathshaala_id: paathshaalaId,
   }
+  if (payload.password) body.password = payload.password
+
   const { data } = await apiClient.post<Teacher>('/teachers', body)
   return data
 }
@@ -67,6 +69,7 @@ export async function updateTeacher(
     body.phone_number = payload.phone_number || payload.phone
     body.phone = payload.phone || payload.phone_number
   }
+  if (payload.password) body.password = payload.password
   if (paathshaalaId !== undefined) {
     body.paathshaala_id = paathshaalaId
     body.assigned_paathshaala_id = paathshaalaId

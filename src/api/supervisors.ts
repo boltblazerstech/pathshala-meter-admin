@@ -42,11 +42,13 @@ export async function getSupervisor(id: string): Promise<Supervisor> {
 
 // POST /supervisors
 export async function createSupervisor(payload: CreateSupervisorRequest): Promise<Supervisor> {
-  const body = {
+  const body: Record<string, any> = {
     name: payload.name,
     phone_number: payload.phone_number || payload.phone,
     phone: payload.phone || payload.phone_number,
   }
+  if (payload.password) body.password = payload.password
+
   const { data } = await apiClient.post<Supervisor>('/supervisors', body)
   return data
 }
@@ -62,6 +64,7 @@ export async function updateSupervisor(
     body.phone_number = payload.phone_number || payload.phone
     body.phone = payload.phone || payload.phone_number
   }
+  if (payload.password) body.password = payload.password
   if (payload.active !== undefined || payload.is_active !== undefined) {
     body.active = payload.active ?? payload.is_active
     body.is_active = payload.is_active ?? payload.active

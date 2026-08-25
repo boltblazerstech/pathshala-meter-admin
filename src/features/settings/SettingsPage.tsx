@@ -7,9 +7,10 @@ export function SettingsPage() {
   const queryClient = useQueryClient()
   const [interval, setIntervalVal] = useState<number | string>('')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['system-config', 'healing-interval'],
     queryFn: getHealingInterval,
+    retry: 1
   })
 
   useEffect(() => {
@@ -60,7 +61,8 @@ export function SettingsPage() {
                 required
                 value={interval}
                 onChange={(e) => setIntervalVal(e.target.value)}
-                disabled={isLoading || updateMutation.isPending}
+                disabled={isLoading || updateMutation.isPending || isError}
+                placeholder={isLoading ? "Loading..." : ""}
                 className="block w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
               />
               <button
@@ -74,6 +76,11 @@ export function SettingsPage() {
             <p className="mt-2 text-sm text-gray-500">
               Determines how frequently the mobile app checks for missed tracking periods to heal data.
             </p>
+            {isError && (
+              <p className="mt-2 text-sm text-red-600 font-medium">
+                Failed to load current interval from server. Is the endpoint implemented?
+              </p>
+            )}
           </div>
         </form>
       </div>
